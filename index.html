@@ -2,11 +2,10 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>RPG Roguelite Dungeon Generator</title>
     <link rel="stylesheet" href="./style.css">
     
-    <!-- Import Maps для поддержки модулей ES6 без сборщиков -->
     <script type="importmap">
         {
             "imports": {
@@ -20,9 +19,82 @@
     <!-- Контейнер для 3D сцены -->
     <div id="canvas-container"></div>
 
-    <!-- Левая панель интерфейса -->
-    <div id="ui-container">
-        <h1>Движок Подземелий</h1>
+    <!-- Игровой HUD (Здоровье, Броня, Золото) -->
+    <div id="hud-container">
+        <div class="hud-bar-container">
+            <span class="hud-label">HP:</span>
+            <div class="hud-bar hp-bar"><div id="bar-hp" style="width: 100%;"></div><span id="txt-hp">10/10</span></div>
+        </div>
+        <div class="hud-bar-container">
+            <span class="hud-label">PA:</span>
+            <div class="hud-bar pa-bar"><div id="bar-pa" style="width: 100%;"></div><span id="txt-pa">5/5</span></div>
+        </div>
+        <div class="hud-bar-container">
+            <span class="hud-label">MA:</span>
+            <div class="hud-bar ma-bar"><div id="bar-ma" style="width: 100%;"></div><span id="txt-ma">5/5</span></div>
+        </div>
+        <div id="hud-gold">🪙 Золото: <span id="txt-gold">0</span></div>
+    </div>
+
+    <!-- Кнопка вызова настроек генератора (Шестеренка) -->
+    <button id="btn-settings-toggle" title="Настройки генератора">⚙️</button>
+
+    <!-- Рука карт внизу экрана -->
+    <div id="cards-panel">
+        <div class="panel-title">Карты в руке</div>
+        <div id="cards-hand-container">
+            <!-- Сюда динамически рендерятся карты -->
+        </div>
+    </div>
+
+    <!-- Сенсорный D-Pad для смартфонов -->
+    <div id="dpad-container">
+        <button id="dpad-up" class="dpad-btn">▲</button>
+        <div class="dpad-row">
+            <button id="dpad-left" class="dpad-btn">◀</button>
+            <button id="dpad-right" class="dpad-btn">▶</button>
+        </div>
+        <button id="dpad-down" class="dpad-btn">▼</button>
+    </div>
+
+    <!-- Модальное боевое окно (Armello) -->
+    <div id="combat-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 id="combat-title">Бой на кубиках</h2>
+            <div class="combat-fighters">
+                <div class="fighter-stats">
+                    <span class="fighter-name">ВЫ</span>
+                    <span id="combat-player-hp">HP: 20/20</span>
+                    <span id="combat-player-pa">PA: 5/5</span>
+                    <span id="combat-player-ma">MA: 5/5</span>
+                </div>
+                <div class="combat-versus">VS</div>
+                <div class="fighter-stats">
+                    <span id="combat-enemy-name" class="fighter-name">ВРАГ</span>
+                    <span id="combat-enemy-hp">HP: 10/10</span>
+                    <span id="combat-enemy-pa">PA: 2/2</span>
+                    <span id="combat-enemy-ma">MA: 2/2</span>
+                </div>
+            </div>
+            <div class="combat-burn-section">
+                <span class="section-subtitle">Сжечь карту перед броском?</span>
+                <div id="combat-burn-cards">
+                    <!-- Карты для сжигания -->
+                </div>
+            </div>
+            <div class="combat-actions">
+                <button id="btn-roll-combat" class="primary">БРОСИТЬ КУБИКИ</button>
+            </div>
+            <div id="combat-logs-container">
+                <!-- Логи раундов -->
+            </div>
+            <button id="btn-close-combat" style="display: none; width: 100%; margin-top: 10px;">ВЫХОД</button>
+        </div>
+    </div>
+
+    <!-- Техническая панель генератора (по умолчанию скрыта) -->
+    <div id="ui-container" class="collapsed">
+        <h1>Панель Генератора</h1>
         <div id="dungeon-name">Генерация...</div>
 
         <div class="section-title">Параметры</div>
@@ -65,7 +137,7 @@
         </label>
         <label class="toggle-container">
             <input type="checkbox" id="toggle-delaunay">
-            <span>Показать триангуляцию (Делоне)</span>
+            <span>Show Triangulation</span>
         </label>
         <label class="toggle-container">
             <input type="checkbox" id="toggle-mst">
