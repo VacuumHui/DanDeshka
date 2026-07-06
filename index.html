@@ -6,14 +6,9 @@
     <title>RPG Roguelite Dungeon Generator</title>
     <link rel="stylesheet" href="./style.css">
     
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
-            }
-        }
-    </script>
+    <!-- Подключаем Three.js и OrbitControls глобально для 100% совместимости с любыми мобильными браузерами -->
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
     <!-- Контейнер для 3D сцены -->
