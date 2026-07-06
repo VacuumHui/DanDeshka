@@ -351,7 +351,6 @@ function openCombatModal(report) {
 function updateCombatStats() {
     if (!activeCombatReport) return;
     const p = combatSystem.player;
-    // Находим монстра на нашей или соседней клетке (поскольку бой уже запущен, монстр жив)
     const m = combatSystem.monsters.find(m => Math.hypot(m.x - p.x, m.y - p.y) <= 1.1) || {
         tier: "Враг", hp: 0, maxHp: 10, pa: 0, maxPa: 2, ma: 0, maxMa: 2
     };
@@ -382,8 +381,8 @@ function renderBurnCards() {
             cardEl.style.boxShadow = '0 0 10px var(--accent-color)';
         }
         cardEl.innerHTML = `
-            <div class="card-name" style="font-size: 0.65rem;">${cardData.name}</div>
-            <div class="card-desc" style="font-size: 0.5rem;">Грань: ${cardData.burnFace === 'swords' ? '⚔️' : cardData.burnFace === 'shields' ? '🛡' : '⚡'}</div>
+            <div class="card-name">${cardData.name}</div>
+            <div class="card-desc">${cardData.description}</div>
             <button class="card-btn" style="font-size: 0.5rem; background: var(--accent-color);" data-index="${idx}">Выбрать</button>
         `;
 
@@ -410,13 +409,11 @@ document.getElementById('btn-roll-combat').addEventListener('click', () => {
     let logBox = document.getElementById('combat-logs-container');
     logBox.innerHTML = '';
 
-    // Если игрок выбрал карту для сжигания
     if (selectedBurnCardIndex !== -1) {
         const burnFace = cardManager.burnCard(selectedBurnCardIndex);
         logBox.innerHTML += `<div>🔥 Игрок сжег карту и гарантировал грань: <b>${burnFace === 'swords' ? '⚔️ Меч' : '🛡 Щит'}</b></div>`;
     }
 
-    // Запускаем симуляцию поединка по Armello + DOS2
     let fightReport = null;
     if (activeCombatReport.playerInitiated) {
         fightReport = combatSystem.resolveDuel(p, m, true);
@@ -424,28 +421,24 @@ document.getElementById('btn-roll-combat').addEventListener('click', () => {
         fightReport = combatSystem.resolveDuel(m, p, false);
     }
 
-    // Отрисовываем пошаговые боевые логи в окне модала
     fightReport.logs.forEach(log => {
         logBox.innerHTML += `<div>${log}</div>`;
     });
     logBox.scrollTop = logBox.scrollHeight;
 
-    // Прячем кнопку броска, открываем кнопку «ВЫХОД»
     document.getElementById('btn-roll-combat').style.display = 'none';
     document.getElementById('btn-close-combat').style.display = 'block';
 
-    // Обновляем статистику боя
     updateCombatStats();
     updateHUD();
 
-    // Если игрок победил — выдаем роглайт добычу!
     if (fightReport.victory && fightReport.lootDropped) {
         const loot = fightReport.lootDropped;
         logBox.innerHTML += `<div style="color: var(--success-color); margin-top: 10px; font-weight: bold;">🎉 ДОБЫЧА: Получено [${loot.name}]!</div>`;
         if (loot.type === 'card') {
             cardManager.addCard(loot.name);
         } else if (loot.type === 'equipment') {
-            p.gold += 15; // Дадим немного золота за экипировку в прототипе
+            p.gold += 15;
         }
     }
 });
@@ -457,10 +450,9 @@ document.getElementById('btn-close-combat').addEventListener('click', () => {
     document.getElementById('combat-modal').style.display = 'none';
     activeCombatReport = null;
 
-    // Очищаем павших монстров с карты
     combatSystem.cleanDeadMonsters();
 
-    // Возвращаем камеру на слежение за игроком с исходным масштабом
+    // ФИКС ОШИБКИ: Используем правильную ссылку renderer.camera.userData.frustumSize вместо camera [INDEX]
     const playerLocation = new THREE.Vector3(combatSystem.player.x, 0, combatSystem.player.y);
     renderer.triggerCameraTransition(playerLocation, renderer.camera.userData.frustumSize, 0.7);
 
@@ -495,13 +487,11 @@ function setupDpad() {
     const bindDpad = (id, dx, dy) => {
         const btn = document.getElementById(id);
         
-        // Touch-события для мобильных дисплеев
         btn.addEventListener('touchstart', (e) => {
             e.preventDefault();
             handlePlayerMove(dx, dy);
         });
         
-        // Клик как запасной вариант на ПК
         btn.addEventListener('click', () => {
             handlePlayerMove(dx, dy);
         });
@@ -517,7 +507,6 @@ function setupDpad() {
  * Связывание UI шестеренки
  */
 function setupUIListeners() {
-    // Раскрытие/скрытие панели генератора
     const btnToggle = document.getElementById('btn-settings-toggle');
     const panel = document.getElementById('ui-container');
     
