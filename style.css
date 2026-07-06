@@ -1,0 +1,230 @@
+:root {
+    --bg-color: #0d0f12;
+    --panel-bg: rgba(18, 22, 28, 0.9);
+    --border-color: #2a313d;
+    --text-color: #e2e8f0;
+    --accent-color: #ff8c3a;
+    --accent-blue: #3b82f6;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: var(--bg-color);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text-color);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Боковая панель интерфейса */
+#ui-container {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 310px;
+    max-height: calc(100vh - 20px);
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    z-index: 10;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-sizing: border-box;
+}
+
+/* Заголовки */
+h1 {
+    font-size: 1rem;
+    margin-top: 0;
+    margin-bottom: 3px;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 6px;
+}
+
+#dungeon-name {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: #94a3b8;
+    margin-bottom: 12px;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin: 12px 0 6px 0;
+    letter-spacing: 0.5px;
+}
+
+/* Элементы параметров */
+.control-group {
+    margin-bottom: 10px;
+}
+
+.control-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    margin-bottom: 3px;
+    color: #cbd5e1;
+}
+
+.control-group input[type="range"] {
+    width: 100%;
+    background: #1e293b;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+    margin: 0;
+}
+
+.control-row {
+    display: flex;
+    gap: 6px;
+}
+
+.control-row > * {
+    flex: 1;
+}
+
+input[type="text"], select, button {
+    background: #1e293b;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    outline: none;
+    box-sizing: border-box;
+}
+
+button {
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.1s ease;
+}
+
+button:hover {
+    background: #334155;
+    border-color: #475569;
+}
+
+button.primary {
+    background: var(--accent-color);
+    color: #000;
+    border: none;
+}
+
+button.primary:hover {
+    background: #ffa15a;
+}
+
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.toggle-container input {
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Статистика */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 4px;
+    font-size: 0.7rem;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Верификация тестов */
+.test-list {
+    font-size: 0.7rem;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.test-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+    padding-bottom: 3px;
+    border-bottom: 1px dashed rgba(255,255,255,0.05);
+}
+
+.test-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Легенда */
+.legend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    font-size: 0.65rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.color-box {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 2px;
+}
+
+/* Медиа-запрос для мобильных дисплеев (размещение интерфейса) */
+@media (max-width: 768px) {
+    #ui-container {
+        width: calc(100vw - 20px);
+        max-height: 40vh;
+        bottom: 10px;
+        top: auto;
+    }
+}
