@@ -5,6 +5,16 @@ const FLOOR = 1;
 const WALL = 2;
 
 /**
+ * ФИКС ОШИБКИ: Локальная реализация smoothstep (так как в JS объекте Math ее нет) [INDEX]
+ */
+function smoothstep(x, min, max) {
+    if (x <= min) return 0;
+    if (x >= max) return 1;
+    const t = (x - min) / (max - min);
+    return t * t * (3 - 2 * t);
+}
+
+/**
  * Алгоритм Брезенхема для проверки прямой видимости между двумя точками на сетке.
  */
 function checkLineOfSight(grid, W, x0, y0, x1, y1) {
@@ -20,7 +30,6 @@ function checkLineOfSight(grid, W, x0, y0, x1, y1) {
     while (true) {
         if (cx === x1 && cy === y1) break;
         
-        // Не проверяем саму стартовую клетку, но проверяем все промежуточные
         if (cx !== x0 || cy !== y0) {
             if (grid[cy * W + cx] === WALL) {
                 return false; // Видимость заблокирована стеной
@@ -44,26 +53,23 @@ function checkLineOfSight(grid, W, x0, y0, x1, y1) {
  * Расчет фактора видимости тайла на основе расстояния, угла взгляда игрока и препятствий.
  */
 function calculateTileVisibility(grid, W, playerX, playerY, playerDir, tx, ty) {
-    const maxRadius = 8.5; // Максимальная дальность обзора
-    const nearRadius = 2.5; // Радиус кругового обзора вблизи
-    const fovHalfAngle = Math.PI * 0.25; // Угол конуса обзора 90 градусов (по 45 в каждую сторону)
+    const maxRadius = 8.5; // Дальность конусного тумана войны
+    const nearRadius = 2.5; // Круговой обзор вокруг игрока
+    const fovHalfAngle = Math.PI * 0.25; // 90 градусов общий угол
 
     const dx = tx - playerX;
     const dy = ty - playerY;
     const dist = Math.hypot(dx, dy);
 
-    // Вне радиуса обзора - полная темнота
     if (dist > maxRadius) return 0.0;
 
     let inSight = false;
     if (dist <= nearRadius) {
-        inSight = true; // Круговой обзор вблизи игрока
+        inSight = true;
     } else {
-        // Вычисляем угол к тайлу относительно направления движения/взгляда
         const angleToTile = Math.atan2(dy, dx);
         let angleDiff = Math.abs(angleToTile - playerDir);
         
-        // Нормализация разности углов до диапазона [0, PI]
         if (angleDiff > Math.PI) {
             angleDiff = Math.PI * 2 - angleDiff;
         }
@@ -73,16 +79,15 @@ function calculateTileVisibility(grid, W, playerX, playerY, playerDir, tx, ty) {
         }
     }
 
-    // Если тайл в теории видим - пускаем луч для проверки препятствий стен
     if (inSight) {
         const hasLOS = checkLineOfSight(grid, W, playerX, playerY, tx, ty);
         if (hasLOS) {
-            // Мягкое затухание видимости на краю радиуса обзора
-            return 1.0 - Math.smoothstep(dist, nearRadius, maxRadius) * 0.75;
+            // ФИКС ОШИБКИ: Используем локальную функцию smoothstep
+            return 1.0 - smoothstep(dist, nearRadius, maxRadius) * 0.75;
         }
     }
 
-    return 0.0; // Скрыто туманом войны
+    return 0.0;
 }
 
 /**
@@ -91,7 +96,6 @@ function calculateTileVisibility(grid, W, playerX, playerY, playerDir, tx, ty) {
 export function buildDungeonScene(dungeon, themeName, toggles, animState, playerState) {
     const group = new THREE.Group();
 
-    // Настройка цветовых палитр тем
     const palettes = {
         crypt: {
             floor: 0x475569, wall: 0x1e293b, pillar: 0x334155,
@@ -111,7 +115,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
     };
     const theme = palettes[themeName] || palettes.crypt;
 
-    // Инициализация низкополигональных базовых геометрий
     const geomFloor = new THREE.BoxGeometry(1, 0.1, 1);
     const geomWall = new THREE.BoxGeometry(1, 1, 1);
     const geomPillar = new THREE.CylinderGeometry(0.18, 0.22, 2.2, 8);
@@ -122,7 +125,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
     const geomPortal = new THREE.RingGeometry(0.4, 0.6, 16);
     const geomCrystal = new THREE.OctahedronGeometry(0.35, 1);
 
-    // Сдвиги пивотов геометрий для точного позиционирования
     geomFloor.translate(0, -0.05, 0);
     geomWall.translate(0, 0.5, 0);
     geomPillar.translate(0, 1.1, 0);
@@ -133,7 +135,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
     geomPortal.rotateX(-Math.PI * 0.5); geomPortal.translate(0, 0.02, 0);
     geomCrystal.translate(0, 0.45, 0);
 
-    // Создание материалов (Phong обеспечивает лоу-поли плоское затенение под источниками света)
     const matFloor = new THREE.MeshPhongMaterial({ flatShading: true, shininess: 0 });
     const matWall = new THREE.MeshPhongMaterial({ color: theme.wall, flatShading: true, shininess: 0 });
     const matPillar = new THREE.MeshPhongMaterial({ color: theme.pillar, flatShading: true, shininess: 0 });
@@ -144,7 +145,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
     const matPortal = new THREE.MeshBasicMaterial({ color: 0x3b82f6, side: THREE.DoubleSide });
     const matCrystal = new THREE.MeshBasicMaterial({ color: theme.torchLight });
 
-    // Подсчет количества элементов каждого типа для инстансинга
     let countFloor = 0, countWall = 0;
     for (let i = 0; i < dungeon.W * dungeon.H; i++) {
         if (dungeon.grid[i] === FLOOR) countFloor++;
@@ -153,7 +153,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
 
     const countKind = (k) => dungeon.props.filter(p => p.kind === k).length;
 
-    // Создание InstancedMesh
     const instFloor = new THREE.InstancedMesh(geomFloor, matFloor, countFloor);
     const instWall = new THREE.InstancedMesh(geomWall, matWall, countWall);
     const instPillar = new THREE.InstancedMesh(geomPillar, matPillar, countKind('pillar'));
@@ -166,7 +165,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
 
     group.add(instFloor, instWall, instPillar, instTorch, instFlame, instDebris, instChest, instPortal, instCrystal);
 
-    // Передаем хук очистки в группу сцены для предотвращения утечек GPU памяти
     group.userData.dispose = () => {
         geomFloor.dispose(); matFloor.dispose();
         geomWall.dispose(); matWall.dispose();
@@ -185,7 +183,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
 
     const torchFlamePositions = [];
 
-    // 1. Отрисовка полов подземелья (Floor)
     for (let y = 0; y < dungeon.H; y++) {
         for (let x = 0; x < dungeon.W; x++) {
             const idx = y * dungeon.W + x;
@@ -194,15 +191,13 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
             let scaleY = 1.0;
             let visibility = 1.0;
 
-            // Если идет анимация сборки сцены, у нее приоритет над туманом войны
             if (animState.active) {
                 const distFromFrontier = dungeon.bfs[idx] - animState.bfsThreshold;
                 if (distFromFrontier > 0) scaleY = 0.0;
                 else if (distFromFrontier > -5) scaleY = 1.0 + (distFromFrontier / 5);
             } else if (playerState) {
-                // Иначе рассчитываем конусный туман войны
                 visibility = calculateTileVisibility(dungeon.grid, dungeon.W, playerState.x, playerState.y, playerState.dir, x, y);
-                scaleY = visibility > 0 ? 1.0 : 0.0; // Опускаем невидимые тайлы под землю
+                scaleY = visibility > 0 ? 1.0 : 0.0;
             }
 
             dummy.position.set(x, 0, y);
@@ -211,7 +206,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
             dummy.updateMatrix();
             instFloor.setMatrixAt(idxFloor, dummy.matrix);
 
-            // Мягкое затемнение по краям (Bake AO на основе количества соседних стен)
             let adjWalls = 0;
             for (let dy = -1; dy <= 1; dy++) {
                 for (let dx = -1; dx <= 1; dx++) {
@@ -247,7 +241,7 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
                     colorDummy.setHex(theme.floor);
                     colorDummy.lerp(roomColor, 0.18).multiplyScalar(ao * jitter * visibility);
                 } else {
-                    colorDummy.setHex(theme.floor).multiplyScalar(0.7 * ao * jitter * visibility); // Коридоры
+                    colorDummy.setHex(theme.floor).multiplyScalar(0.7 * ao * jitter * visibility);
                 }
             }
 
@@ -256,8 +250,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
         }
     }
 
-    // 2. Отрисовка внешних стен (Walls)
-    const wallRNG = new SeededRNG(dungeon.params.seed + 98765);
     for (let y = 0; y < dungeon.H; y++) {
         for (let x = 0; x < dungeon.W; x++) {
             const idx = y * dungeon.W + x;
@@ -269,7 +261,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
             if (animState.active) {
                 scaleY *= Math.max(0.001, animState.wallGrowth);
             } else if (playerState) {
-                // Стены также затухают в тумане войны
                 visibility = calculateTileVisibility(dungeon.grid, dungeon.W, playerState.x, playerState.y, playerState.dir, x, y);
                 scaleY = visibility > 0 ? scaleY : 0.0;
             }
@@ -280,7 +271,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
             dummy.updateMatrix();
             instWall.setMatrixAt(idxWall, dummy.matrix);
 
-            // Цвет стен подстраивается под туман войны
             colorDummy.setHex(theme.wall).multiplyScalar(visibility);
             instWall.setColorAt(idxWall, colorDummy);
             idxWall++;
@@ -290,14 +280,9 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
     instFloor.count = idxFloor;
     instWall.count = idxWall;
 
-    // 3. Расстановка объектов и окружения (Props)
-    const scaleProp = animState.active ? animState.propsScale : 1.0;
-
     for (let p of dungeon.props) {
         let visibility = 1.0;
-
         if (!animState.active && playerState) {
-            // Объекты также подвержены конусному туману войны
             visibility = calculateTileVisibility(dungeon.grid, dungeon.W, playerState.x, playerState.y, playerState.dir, p.x, p.y);
         }
 
@@ -365,7 +350,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
     instPortal.count = idxPortal;
     instCrystal.count = idxCrystal;
 
-    // 4. Отрисовка динамических источников света (Torches / Key Lights)
     const torchBudget = 8;
     const keyLights = [];
 
@@ -409,7 +393,7 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
         let currentIntensity = kl.intensity;
         if (!animState.active && playerState) {
             const vis = calculateTileVisibility(dungeon.grid, dungeon.W, playerState.x, playerState.y, playerState.dir, kl.x, kl.y);
-            currentIntensity *= vis; // Увеличиваем/гасим свет ключей в зависимости от тумана войны
+            currentIntensity *= vis;
         }
         const light = new THREE.PointLight(kl.color, currentIntensity, 9.0, 1.8);
         light.position.set(kl.x, kl.height, kl.y);
@@ -421,7 +405,7 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
         let currentIntensity = 1.5;
         if (!animState.active && playerState) {
             const vis = calculateTileVisibility(dungeon.grid, dungeon.W, playerState.x, playerState.y, playerState.dir, st.x, st.y);
-            currentIntensity *= vis; // Гасим свет настенных факелов, если они во тьме
+            currentIntensity *= vis;
         }
         const light = new THREE.PointLight(theme.torchLight, currentIntensity, 7.5, 2.0);
         light.position.set(st.x, 1.4, st.y - 0.35);
@@ -431,7 +415,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
 
     group.userData.lights = lightObjects;
 
-    // 5. Оверлей отладочной информации (Graph Debug Overlays)
     if (toggles.delaunay && dungeon.delaunayEdges) {
         const matDel = new THREE.LineBasicMaterial({ color: 0x1d4ed8, transparent: true, opacity: 0.45 });
         const pts = [];
@@ -485,7 +468,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
         }
     }
 
-    // 6. Отрисовка маркеров монстров (Spawns)
     const geomSpawn = new THREE.RingGeometry(0.18, 0.22, 8);
     geomSpawn.rotateX(-Math.PI * 0.5); geomSpawn.translate(0, 0.03, 0);
     const matSpawnMinion = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide });
@@ -532,7 +514,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
 
     group.add(instSpMinion, instSpElite, instSpBoss);
 
-    // Добавляем очистку спавнов при сбросе группы
     const oldDispose = group.userData.dispose;
     group.userData.dispose = () => {
         if (oldDispose) oldDispose();
@@ -545,9 +526,6 @@ export function buildDungeonScene(dungeon, themeName, toggles, animState, player
     return group;
 }
 
-/**
- * Класс-декоратор для детерминированного псевдо-генератора шума.
- */
 class SeededRNG {
     constructor(seed) {
         this.state = seed >>> 0;
