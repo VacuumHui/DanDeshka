@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG Roguelite Dungeon Generator</title>
+    <link rel="stylesheet" href="./style.css">
+    
+    <!-- Import Maps для поддержки модулей ES6 без сборщиков -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- Контейнер для 3D сцены -->
+    <div id="canvas-container"></div>
+
+    <!-- Левая панель интерфейса -->
+    <div id="ui-container">
+        <h1>Движок Подземелий</h1>
+        <div id="dungeon-name">Генерация...</div>
+
+        <div class="section-title">Параметры</div>
+        <div class="control-group">
+            <label><span>Сид (Зерно)</span><span id="seed-val">12345</span></label>
+            <div class="control-row">
+                <input type="text" id="seed-input" value="12345">
+                <button id="btn-roll">🎲 Кости</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label><span>Количество комнат</span><span id="rooms-val">42</span></label>
+            <input type="range" id="param-rooms" min="15" max="80" value="42">
+        </div>
+
+        <div class="control-group">
+            <label><span>Шанс петель (циклов)</span><span id="loops-val">0.15</span></label>
+            <input type="range" id="param-loops" min="0" max="0.5" step="0.05" value="0.15">
+        </div>
+
+        <div class="control-group">
+            <label><span>Плотность декора</span><span id="decor-val">0.60</span></label>
+            <input type="range" id="param-decor" min="0.1" max="1.0" step="0.05" value="0.6">
+        </div>
+
+        <div class="control-group">
+            <label><span>Тематическая палитра</span></label>
+            <select id="param-theme" style="width: 100%;">
+                <option value="crypt">Склеп (Камень и огненные факелы)</option>
+                <option value="lava">Лава (Базальт и лавовые факелы)</option>
+                <option value="forest">Заросли (Мох и призрачный огонь)</option>
+            </select>
+        </div>
+
+        <div class="section-title">Рендеринг и отладка</div>
+        <label class="toggle-container">
+            <input type="checkbox" id="toggle-animate" checked>
+            <span>Анимировать сборку сцены</span>
+        </label>
+        <label class="toggle-container">
+            <input type="checkbox" id="toggle-delaunay">
+            <span>Показать триангуляцию (Делоне)</span>
+        </label>
+        <label class="toggle-container">
+            <input type="checkbox" id="toggle-mst">
+            <span>Показать скелет MST (Белый)</span>
+        </label>
+        <label class="toggle-container">
+            <input type="checkbox" id="toggle-loop-edges">
+            <span>Показать петли графа (Голубой)</span>
+        </label>
+        <label class="toggle-container">
+            <input type="checkbox" id="toggle-crit-path">
+            <span>Показать критический путь (Красный)</span>
+        </label>
+        <label class="toggle-container">
+            <input type="checkbox" id="toggle-heatmap">
+            <span>Тепловая карта сложности</span>
+        </label>
+
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            <button id="btn-generate" class="primary" style="width: 100%; padding: 8px;">ПОСТРОИТЬ ПОДЗЕМЕЛЬЕ</button>
+        </div>
+
+        <div class="section-title">Статистика</div>
+        <div class="stats-grid">
+            <div>Задержка генерации:</div><div id="stat-latency" style="color:var(--accent-color); font-weight:bold;">0 ms</div>
+            <div>Размер сетки:</div><div id="stat-grid">0 x 0</div>
+            <div>Плитки пола / Стены:</div><div id="stat-tiles">0 / 0</div>
+            <div>Создано комнат:</div><div id="stat-rooms">0</div>
+            <div>Количество петель:</div><div id="stat-loops">0</div>
+            <div>Длина крит. пути:</div><div id="stat-crit">0</div>
+            <div>Props / Spawns:</div><div id="stat-props">0 / 0</div>
+            <div>Попытки связки:</div><div id="stat-retries">0</div>
+        </div>
+
+        <div class="section-title">Система верификации</div>
+        <div class="test-list">
+            <div class="test-item"><span>1. Связность уровня заливкой (100%)</span><span id="test-connectivity" class="status-pass">УСПЕХ</span></div>
+            <div class="test-item"><span>2. Проверка детерминизма генератора</span><span id="test-determinism" class="status-pass">УСПЕХ</span></div>
+            <div class="test-item"><span>3. Проверка темпа и структуры</span><span id="test-pacing" class="status-pass">УСПЕХ</span></div>
+            <div class="test-item"><span>4. Проверка наличия петель графа</span><span id="test-cycles" class="status-pass">УСПЕХ</span></div>
+            <div class="test-item"><span>5. Безопасность спавнов и объектов</span><span id="test-safety" class="status-pass">УСПЕХ</span></div>
+            <div class="test-item"><span>6. Лимит времени генерации (50мс)</span><span id="test-budget" class="status-pass">УСПЕХ</span></div>
+        </div>
+
+        <div class="section-title">Легенда</div>
+        <div class="legend-grid">
+            <div class="legend-item"><div class="color-box" style="background:#555;"></div><span>Плитка пола</span></div>
+            <div class="legend-item"><div class="color-box" style="background:#888;"></div><span>Внешняя стена</span></div>
+            <div class="legend-item"><div class="color-box" style="background:#ff8c3a;"></div><span>Настенный факел</span></div>
+            <div class="legend-item"><div class="color-box" style="background:#3b82f6;"></div><span>Входной портал</span></div>
+            <div class="legend-item"><div class="color-box" style="background:#ef4444;"></div><span>Жаровня босса</span></div>
+            <div class="legend-item"><div class="color-box" style="background:#8b5cf6;"></div><span>Кристалл алтаря</span></div>
+            <div class="legend-item"><div class="color-box" style="background:#eab308;"></div><span>Сундук</span></div>
+            <div class="legend-item"><div class="color-box" style="background:#22c55e;"></div><span>Маркер монстра</span></div>
+        </div>
+    </div>
+
+    <!-- Запуск игры через координатор main.js -->
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>
