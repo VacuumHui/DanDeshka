@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#06070a">
+  <title>Тени Подземелья — Roguelite Prototype</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="game-root" aria-label="Игровая сцена"></div>
+
+  <section id="player-hud" class="glass" aria-label="Показатели героя">
+    <div class="hud-title"><strong id="dungeon-name">Подземелье</strong><span id="turn-counter">Ход 0</span></div>
+    <div class="stat-row"><span>HP</span><div class="bar hp"><i id="hp-bar"></i></div><b id="hp-text">18/18</b></div>
+    <div class="stat-row"><span>PA</span><div class="bar pa"><i id="pa-bar"></i></div><b id="pa-text">6/6</b></div>
+    <div class="stat-row"><span>MA</span><div class="bar ma"><i id="ma-bar"></i></div><b id="ma-text">4/4</b></div>
+    <div class="hud-footer"><span>🪙 <b id="gold-text">0</b></span><span>⚔ <b id="fight-text">4</b></span><span id="phase-text">Исследование</span></div>
+  </section>
+
+  <button id="gear-toggle" class="round-button glass" aria-controls="gear-panel" aria-expanded="false">⚙️</button>
+  <aside id="gear-panel" class="glass collapsed" aria-label="Параметры генератора">
+    <header><strong>Генератор</strong><button id="gear-close" aria-label="Закрыть">×</button></header>
+    <label>Сид <input id="seed-input" value="G+ Dungeon 128" autocomplete="off"></label>
+    <div class="button-row"><button id="seed-roll">🎲 Новый сид</button><button id="generate-button" class="primary">Создать</button></div>
+    <label>Комнаты <output id="rooms-output">42</output><input id="rooms-input" type="range" min="15" max="60" value="42"></label>
+    <label>Петли <output id="loops-output">0.15</output><input id="loops-input" type="range" min="0" max="0.5" step="0.05" value="0.15"></label>
+    <label>Декор <output id="decor-output">0.55</output><input id="decor-input" type="range" min="0.1" max="1" step="0.05" value="0.55"></label>
+    <label>Тема <select id="theme-input"><option value="crypt">Склеп</option><option value="lava">Лава</option><option value="forest">Заросли</option></select></label>
+    <div class="debug-grid">
+      <label><input id="debug-graph" type="checkbox"> Граф</label>
+      <label><input id="debug-fow" type="checkbox"> Без FOW</label>
+    </div>
+    <div id="generator-stats" class="stats"></div>
+    <div id="acceptance-tests" class="tests"></div>
+    <p class="hint">WASD / стрелки · на телефоне — D-Pad. Касание клетки меняет направление обзора.</p>
+  </aside>
+
+  <section id="cards-panel" class="glass" aria-label="Карты в руке">
+    <div id="cards-empty">Рука пуста. Ищите сундуки и святилища.</div>
+    <div id="cards-list"></div>
+  </section>
+
+  <nav id="dpad" class="glass" aria-label="Управление движением">
+    <button data-dx="0" data-dy="-1" aria-label="Вверх">▲</button>
+    <button data-dx="-1" data-dy="0" aria-label="Влево">◀</button>
+    <button data-dx="1" data-dy="0" aria-label="Вправо">▶</button>
+    <button data-dx="0" data-dy="1" aria-label="Вниз">▼</button>
+  </nav>
+
+  <div id="toast-layer" aria-live="polite"></div>
+
+  <div id="combat-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="combat-title">
+    <div class="combat-card glass">
+      <header><div><small id="combat-initiative">Инициатива</small><h2 id="combat-title">Бой</h2></div><button id="combat-skip" class="danger">Отступить</button></header>
+      <div class="versus">
+        <div><strong>Герой</strong><span id="combat-player-stats"></span></div>
+        <b>VS</b>
+        <div><strong id="combat-enemy-name">Враг</strong><span id="combat-enemy-stats"></span></div>
+      </div>
+      <p class="combat-help">Перед броском можно сжечь одну карту: её символ заменит первый куб.</p>
+      <div id="combat-burn-cards" class="burn-cards"></div>
+      <button id="combat-roll" class="primary roll-button">Бросить кости</button>
+      <div id="dice-player" class="dice-row"></div>
+      <div id="dice-enemy" class="dice-row"></div>
+      <pre id="combat-log"></pre>
+    </div>
+  </div>
+
+  <div id="game-over" class="modal hidden">
+    <div class="glass game-over-card"><h1>Герой пал</h1><p id="game-over-summary"></p><button id="restart-button" class="primary">Новое подземелье</button></div>
+  </div>
+
+  <!-- Global classic scripts: no importmaps. -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/three@0.128.0/build/three.min.js'"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" onerror="this.onerror=null;this.src='https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js'"></script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
